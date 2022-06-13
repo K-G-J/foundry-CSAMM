@@ -14,9 +14,9 @@ contract CSAMM {
     uint public totalSupply; // total shares
     mapping(address => uint) public balanceOf;
 
-    constructor(IERC20 _token0, IERC20 _token1) {
-        token0 = _token0;
-        token1 = _token1;
+    constructor(address _token0, address _token1) {
+        token0 = IERC20(_token0);
+        token1 = IERC20(_token1);
     }
 
     function _mint(address _to, uint _amount) private {
