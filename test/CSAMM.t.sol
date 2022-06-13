@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "ds-test/test.sol";
+import "forge-std/test.sol";
 import "forge-std/Vm.sol";
 import "solmate/test/utils/mocks/MockERC20.sol";
 import "../src/CSAMM.sol";
 import "../src/interfaces/IERC20.sol";
 
-contract CSAMMTest is DSTest {
-    Vm vm = Vm(HEVM_ADDRESS);
+contract CSAMMTest is Test {
 
     address alice = address(0x1337);
     address bob = address(0x133702);
