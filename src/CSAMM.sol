@@ -15,6 +15,7 @@ contract CSAMM {
     mapping(address => uint) public balanceOf;
 
     constructor(address _token0, address _token1) {
+        require(_token0 != address(0) && _token1 != address(0), "invalid address");
         token0 = IERC20(_token0);
         token1 = IERC20(_token1);
     }
@@ -44,7 +45,7 @@ contract CSAMM {
 
         // transfer token in 
         tokenIn.transferFrom(msg.sender, address(this), _amountIn);
-        uint amountIn = token0.balanceOf(address(this)) - resIn;
+        uint amountIn = tokenIn.balanceOf(address(this)) - resIn;
         // calculate amount out (including fees) 
         // dx = dy 
         // 0.3% fee
@@ -52,7 +53,7 @@ contract CSAMM {
 
         // update reserve0 and reserve1
         (uint res0, uint res1) = isToken0 ?
-        (resIn + _amountIn, resOut - amountOut) : (resOut - amountOut, resIn + _amountIn);
+        (resIn + amountIn, resOut - amountOut) : (resOut - amountOut, resIn + amountIn);
         _update(res0, res1);
 
         // transfer token out 
