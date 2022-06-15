@@ -97,9 +97,12 @@ contract CSAMMTest is Test {
     }
 
     function testFuzz__addLiquidity(uint256 amount0, uint256 amount1) public {
-        vm.assume(type(uint256).max - amount0 >= token0.totalSupply() - 1e18);
-        vm.assume(type(uint256).max - amount1 >= token1.totalSupply() - 1e18);
         vm.assume(amount0 > 0 && amount1 > 0);
+        vm.assume(amount0 <= token0.totalSupply());
+        vm.assume(amount1 <= token1.totalSupply());
+        vm.assume(amount0 <= token0.balanceOf(address(this)));
+        vm.assume(amount1 <= token1.balanceOf(address(this)));
+
         token0.mint(address(this), amount0);
         token1.mint(address(this), amount1);
         token0.approve(address(this), amount0);
