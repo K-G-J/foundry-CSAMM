@@ -64,22 +64,32 @@ contract CSAMMTest is Test {
         CSAMMcontract.addLiquidity(50, 50);
         uint token0BalBefore = token0.balanceOf(address(this));
         uint token1BalBefore = token1.balanceOf(address(this));
+        uint res0prebal = CSAMMcontract.reserve0();
+        uint res1prebal = CSAMMcontract.reserve1();
         CSAMMcontract.swap(address(token0), 10);
+        assertEq(CSAMMcontract.reserve0(), res0prebal + 10);
         assertEq(CSAMMcontract.reserve0(), 60);
         assertEq(token0.balanceOf(address(this)), token0BalBefore - 10);
         // 0.3% fee -> 10 * .997 = 9
+        uint amountOut = uint(10 * 997) / 1000;
+        assertEq(CSAMMcontract.reserve1(), res1prebal - amountOut);
         assertEq(CSAMMcontract.reserve1(), 41);
-        assertEq(token1.balanceOf(address(this)), token1BalBefore + 9);
+        assertEq(token1.balanceOf(address(this)), token1BalBefore + amountOut);
     }
 
     function test__swapToken1() public {
         CSAMMcontract.addLiquidity(50, 50);
         uint token0BalBefore = token0.balanceOf(address(this));
         uint token1BalBefore = token1.balanceOf(address(this));
+        uint res0prebal = CSAMMcontract.reserve0();
+        uint res1prebal = CSAMMcontract.reserve1();
         CSAMMcontract.swap(address(token1), 10);
-         // 0.3% fee -> 10 * .997 = 9
+        // 0.3% fee -> 10 * .997 = 9
+        uint amountOut = uint(10 * 997) / 1000;
+        assertEq(CSAMMcontract.reserve0(), res0prebal - amountOut);
         assertEq(CSAMMcontract.reserve0(), 41);
-        assertEq(token0.balanceOf(address(this)), token0BalBefore + 9);
+        assertEq(token0.balanceOf(address(this)), token0BalBefore + amountOut);
+        assertEq(CSAMMcontract.reserve1(), res1prebal + 10);
         assertEq(CSAMMcontract.reserve1(), 60);
         assertEq(token1.balanceOf(address(this)), token1BalBefore - 10);
     }
@@ -102,15 +112,44 @@ contract CSAMMTest is Test {
         vm.assume(amount1 <= token1.totalSupply());
         vm.assume(amount0 <= token0.balanceOf(address(this)));
         vm.assume(amount1 <= token1.balanceOf(address(this)));
-
         token0.mint(address(this), amount0);
         token1.mint(address(this), amount1);
-        token0.approve(address(this), amount0);
-        token1.approve(address(this), amount1);
+        token0.approve(address(CSAMMcontract), amount0);
+        token1.approve(address(CSAMMcontract), amount1);
         CSAMMcontract.addLiquidity(amount0, amount1);
         assertEq(CSAMMcontract.reserve0(), amount0);
         assertEq(CSAMMcontract.reserve1(), amount1);
         assertEq(CSAMMcontract.balanceOf(address(this)), amount0 + amount1);
         assertEq(CSAMMcontract.totalSupply(), amount0 + amount1);
+    }
+
+    function testFuzz__swap(uint256 swapAmount) public {
+        vm.assume(swapAmount > 0);
+        vm.assume(swapAmount <= token0.totalSupply());
+        vm.assume(swapAmount <= token1.totalSupply());
+        vm.assume(swapAmount <= token0.balanceOf(address(this)));
+        // vm.assume(swapAmount <= 100);
+
+        token0.mint(address(this), 1e18);
+        token1.mint(address(this), 1e18);
+        token0.approve(address(CSAMMcontract), 200);
+        token1.approve(address(CSAMMcontract), 200);
+
+        CSAMMcontract.addLiquidity(100, 100);
+        console.log(token0.balanceOf(address(this)));
+        uint token0BalBefore = token0.balanceOf(address(this));
+        uint token1BalBefore = token1.balanceOf(address(this));
+        uint res0prebal = CSAMMcontract.reserve0();
+        uint res1prebal = CSAMMcontract.reserve1();
+
+        token0.approve(address(CSAMMcontract), swapAmount);
+        token1.approve(address(CSAMMcontract), swapAmount);
+        CSAMMcontract.swap(address(token0), swapAmount);
+
+        // assertEq(CSAMMcontract.reserve0(), res0prebal + swapAmount);
+        // assertEq(token0.balanceOf(address(this)), token0BalBefore - swapAmount);
+        // uint amountOut = uint(swapAmount * 997) / 1000;
+        // assertEq(CSAMMcontract.reserve1(), res1prebal - amountOut);
+        // assertEq(token1.balanceOf(address(this)), token1BalBefore + amountOut);
     }
 }
