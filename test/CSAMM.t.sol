@@ -60,6 +60,12 @@ contract CSAMMTest is Test {
         assertEq(CSAMMcontract.totalSupply(), 600);
     }
 
+    function test__swapInvalidToken() public {
+        CSAMMcontract.addLiquidity(50, 50);
+        vm.expectRevert(bytes("invalid token"));
+        CSAMMcontract.swap(address(0x1234), 10);
+    }
+
     function test__swapToken0() public {
         CSAMMcontract.addLiquidity(50, 50);
         uint token0BalBefore = token0.balanceOf(address(this));
