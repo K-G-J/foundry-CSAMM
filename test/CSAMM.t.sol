@@ -223,18 +223,18 @@ contract CSAMMTest is Test {
         CSAMMcontract.addLiquidity(100, 100);
         uint token0prebal = token0.balanceOf(address(this));
         uint token1prebal = token1.balanceOf(address(this));
+        uint contractSharesBefore = CSAMMcontract.totalSupply();
+        uint res0prebal = CSAMMcontract.reserve0();
+        uint res1prebal = CSAMMcontract.reserve1();
+        uint d0 = (CSAMMcontract.reserve0() * shares) /
+            CSAMMcontract.totalSupply();
+        uint d1 = (CSAMMcontract.reserve1() * shares) /
+            CSAMMcontract.totalSupply();
         CSAMMcontract.removeLiquidity(shares);
-        assertEq(
-            token0.balanceOf(address(this)),
-            token0prebal +
-                ((CSAMMcontract.reserve0() * shares) /
-                    CSAMMcontract.totalSupply())
-        );
-        assertEq(
-            token1.balanceOf(address(this)),
-            token1prebal +
-                ((CSAMMcontract.reserve1() * shares) /
-                    CSAMMcontract.totalSupply())
-        );
+        assertEq(token0.balanceOf(address(this)), token0prebal + d0);
+        assertEq(token1.balanceOf(address(this)), token1prebal + d1);
+        assertEq(CSAMMcontract.totalSupply(), contractSharesBefore - shares);
+        assertEq(CSAMMcontract.reserve0(), res0prebal - d0);
+        assertEq(CSAMMcontract.reserve1(), res1prebal - d1);
     }
 }
