@@ -94,6 +94,13 @@ contract CSAMMTest is Test {
         assertEq(token1.balanceOf(address(this)), token1BalBefore - 10);
     }
 
+    function test_RemoveLiquidityInvalidShares() public {
+        CSAMMcontract.addLiquidity(100, 100);
+        uint _shares = CSAMMcontract.balanceOf(address(this));
+        vm.expectRevert(bytes("invalid quantity"));
+        CSAMMcontract.removeLiquidity(_shares + 1);
+    }
+
     function test__removeLiquidity() public {
         CSAMMcontract.addLiquidity(100, 100);
         uint _shares = CSAMMcontract.balanceOf(address(this));
@@ -104,6 +111,35 @@ contract CSAMMTest is Test {
         assertEq(CSAMMcontract.totalSupply(), 0);
         assertEq(CSAMMcontract.reserve0(), 0);
         assertEq(CSAMMcontract.reserve1(), 0);
+    }
+
+    function test__removeLiquidityMultiple() public {
+        CSAMMcontract.addLiquidity(100, 100);
+        vm.startPrank(bob);
+        token0.mint(address(bob), 200);
+        token1.mint(address(bob), 200);
+        token0.approve(address(CSAMMcontract), 200);
+        token1.approve(address(CSAMMcontract), 200);
+        CSAMMcontract.addLiquidity(150, 150);
+        // shares = ((d0 + d1) * totalSupply) / (reserve0 + reserve1)
+        uint _bobShares = ((150 + 150) * CSAMMcontract.totalSupply()) /
+            (CSAMMcontract.reserve0() + CSAMMcontract.reserve1());
+        CSAMMcontract.removeLiquidity(_bobShares);
+        // d0 = (reserve0 * _shares) / totalSupply;
+        // d1 = (reserve1 * _shares) / totalSupply;
+        assertEq(
+            token0.balanceOf(address(bob)),
+            50 +
+                ((CSAMMcontract.reserve0() * _bobShares) /
+                    CSAMMcontract.totalSupply())
+        );
+        assertEq(
+            token1.balanceOf(address(bob)),
+            50 +
+                ((CSAMMcontract.reserve1() * _bobShares) /
+                    CSAMMcontract.totalSupply())
+        );
+        vm.stopPrank();
     }
 
     function testFuzz__addLiquidity(uint256 amount0, uint256 amount1) public {
@@ -172,9 +208,33 @@ contract CSAMMTest is Test {
         token1.approve(address(CSAMMcontract), swapAmount1);
         // second swap
         CSAMMcontract.swap(address(token1), swapAmount1);
-        assertEq(token1.balanceOf(address(this)), token1BalBefore - swapAmount1);
+        assertEq(
+            token1.balanceOf(address(this)),
+            token1BalBefore - swapAmount1
+        );
         assertEq(CSAMMcontract.reserve1(), res1prebal + swapAmount1);
         assertEq(token0.balanceOf(address(this)), token0BalBefore + amountOut);
         assertEq(CSAMMcontract.reserve0(), res0prebal - amountOut);
+    }
+
+    function testFuzz__RemoveLiquidity(uint256 shares) public {
+        vm.assume(shares <= CSAMMcontract.balanceOf(address(this)));
+
+        CSAMMcontract.addLiquidity(100, 100);
+        uint token0prebal = token0.balanceOf(address(this));
+        uint token1prebal = token1.balanceOf(address(this));
+        CSAMMcontract.removeLiquidity(shares);
+        assertEq(
+            token0.balanceOf(address(this)),
+            token0prebal +
+                ((CSAMMcontract.reserve0() * shares) /
+                    CSAMMcontract.totalSupply())
+        );
+        assertEq(
+            token1.balanceOf(address(this)),
+            token1prebal +
+                ((CSAMMcontract.reserve1() * shares) /
+                    CSAMMcontract.totalSupply())
+        );
     }
 }

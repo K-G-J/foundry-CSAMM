@@ -93,6 +93,7 @@ contract CSAMM {
     }
 
     function removeLiquidity(uint _shares) external returns (uint d0, uint d1) {
+        require (_shares <= balanceOf[msg.sender], "invalid quantity");
         /*
         a = amount out 
         L = total liquidity 
